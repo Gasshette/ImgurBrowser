@@ -4,12 +4,11 @@ import { Image, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { colors } from '../App';
 
-export const Header = () => {
+type HeaderProps = {
+  navigation?: any;
+}
+export const Header = (props: HeaderProps) => {
   const route = useRoute();
-
-  React.useEffect(() => {
-    console.log('route = ', route);
-  }, []);
 
   const style = StyleSheet.create({
     wrapper: {

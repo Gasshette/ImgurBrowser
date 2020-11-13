@@ -3,6 +3,7 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import { Drawer } from 'react-native-paper';
 import { colors } from '../App';
+import * as api from '../api'
 
 export const DrawerContent = (props: any) => {
   const [activeLink, setActiveLink] = React.useState(0);
@@ -21,6 +22,10 @@ export const DrawerContent = (props: any) => {
       color: colors.accent
     }
   });
+
+  React.useEffect(() => {
+    api.getTokens(() => props.navigation.navigate('Error'));
+  }, []);
 
   return (
     <DrawerContentScrollView style={{backgroundColor: colors.accent}}>

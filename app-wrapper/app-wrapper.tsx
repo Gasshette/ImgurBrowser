@@ -7,6 +7,7 @@ import { Home } from '../components/home';
 import { Upload } from '../components/upload';
 import { Favorite } from '../components/favorite';
 import { Header } from '../components/header';
+import { Error } from '../components/error';
 import { colors } from '../App';
 import { ScrollView } from 'react-native';
 import {DrawerContent } from './drawer-content';
@@ -28,6 +29,7 @@ export const AppWrapper = () => {
         <Drawer.Screen name='Home' >{() => getComponent(Home)}</Drawer.Screen>
         <Drawer.Screen name='Upload'>{() => getComponent(Upload)}</Drawer.Screen>
         <Drawer.Screen name='Favorites'>{() => getComponent(Favorite)}</Drawer.Screen>
+        <Drawer.Screen name='Error'>{() => getComponent(Error)}</Drawer.Screen>
       </Drawer.Navigator>
     </NavigationContainer>
   );

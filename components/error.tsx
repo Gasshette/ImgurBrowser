@@ -1,10 +1,12 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Dimensions, Text, View } from 'react-native';
 import { colors } from '../App';
+import { Header } from './header';
 
 export const Error = () => (
-  <View>
-    <Text style={{marginTop: 150, backgroundColor: colors.accent, color: colors.white}}>
+  <View style={{height: Dimensions.get("window").height, backgroundColor: colors.accent}}>
+    <Header title="Error" />
+    <Text style={{padding: 15, color: colors.white}}>
       An error occured during the authentication process :(
     </Text>
   </View>

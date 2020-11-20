@@ -4,8 +4,8 @@ export class Helper {
    * @param compared The string to compare (compare = is inside the array)
    * @param comparer The array of string
    */
-  public testString = (compared: string, comparer: Array<string>) => {
-    const regex = new RegExp(comparer.join('|'), 'i');
-    return regex.test(compared);
+  public testString = (compared: Array<string>, comparer: Array<string>) => {
+    const regex = new RegExp(compared.join('|'), 'i');
+    return regex.test(comparer.join('|'));
   }
 }

@@ -17,9 +17,7 @@ export const Header = (props: HeaderProps) => {
   const route = useRoute();
 
   const syncImages = () => {
-    route.name.toLowerCase() === 'favorites'
-      ? api.getFavorites()
-      : api.getPosts();
+    api.reloadData(route.name);
   };
 
   const style = StyleSheet.create({
@@ -27,7 +25,7 @@ export const Header = (props: HeaderProps) => {
       flexDirection: 'row',
     },
     wrapper: {
-      backgroundColor: colors.blue,
+      backgroundColor: colors.surface,
       padding: 15,
       flexShrink: 0,
       alignItems: 'center',

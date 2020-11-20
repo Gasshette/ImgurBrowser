@@ -1,11 +1,25 @@
 import { ImgurImage } from "./models/image";
 import {BehaviorSubject} from 'rxjs';
 
+
+export type SnackbarParams = {
+    color: string;
+    message: string;
+    isVisible: boolean;
+}
+
+export type Filters = {
+  title?: string;
+  tag?: string;
+}
+
 export type AppStateType = {
   username?: string;
   isTokenRetrieved?: boolean;
   posts?: Array<ImgurImage>;
   favorites?: Array<ImgurImage>;
+  snackbar?: SnackbarParams;
+  filters?: Filters;
 }
 
 export class AppState {

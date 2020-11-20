@@ -1,67 +1,175 @@
 import React from 'react';
-import { Dimensions, StyleSheet, Text, View } from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
-import { Subject } from 'rxjs';
+import {
+  Dimensions,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { FlatList, ScrollView } from 'react-native-gesture-handler';
+import { ActivityIndicator, Modal, Portal, Text } from 'react-native-paper';
+import { Subject, Subscription } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { Api } from '../api';
-import { colors } from '../App';
+import { colors, fallbackImage, theme } from '../App';
 import { AppState, AppStateType } from '../app-state';
 import { ImgurImage } from '../models/image';
 import { ImgurCard } from './imgur-card';
+import * as _ from 'lodash';
+import AutoHeightImage from 'react-native-auto-height-image';
+import { Helper } from '../helper';
 
-export const Post = () => {
+export const Post = ({
+  isUserOwnContent,
+  navigation,
+}: {
+  isUserOwnContent: boolean;
+  navigation: any;
+}) => {
   const subject = new Subject();
 
   const api = Api.getInstance();
   const appState = AppState.getInstance();
+  const helper = new Helper();
 
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [posts, setPosts] = React.useState<Array<ImgurImage> | null>(null);
-
+  const [modal, setmodal] = React.useState<{
+    isVisible: boolean;
+    image: ImgurImage | null;
+  }>({ isVisible: false, image: null });
+  let appStateSubscription: Subscription;
+  let routeSubscription: Subscription;
   React.useEffect(() => {
-    // This condition on 'null' prevent an infinite loop
-    if (!posts) {
-      api.getPosts();
+    if (!appStateSubscription) {
+      let subscription = appState.state
+        .pipe(takeUntil(subject))
+        .subscribe((state: AppStateType) => {
+          if (state !== undefined && state.posts !== undefined) {
+            setPosts(state.posts);
+            setIsLoading(false);
+          }
+        });
     }
 
-    appState.state.pipe(takeUntil(subject)).subscribe((state: AppStateType) => {
-      if (state !== undefined && state.posts !== undefined) {
-        setPosts(state.posts);
+    return () => {
+      // Not working here, don't know why
+      appStateSubscription = Subscription.EMPTY;
+      subject.next();
+      subject.complete();
+    };
+  }, []);
+
+  // We need to handle the data loading with this handler rather than the
+  // 'useRoute()' hook because the hook isn't updated (Dark magic, trick of the light, I don't know)
+  React.useEffect(() => {
+    routeSubscription = navigation.addListener('focus', (navData: any) => {
+      setIsLoading(true);
+
+      if(helper.testString(['gallery'], [navData.target])){
+        api.getGallery();
+      } else if(helper.testString(['mycontent'], [navData.target])){
+        api.getMyContent();
+      } else if(helper.testString(['favorites'], [navData.target])) {
+        api.getFavorites();
       }
     });
 
-    return subject.unsubscribe();
-  }, []);
+    return () => {
+      routeSubscription = Subscription.EMPTY;
+    };
+  }, [navigation]);
 
-  const getCards = () => {
-    if (!posts?.length) {
-      return (
-        <Text style={{ color: colors.white }}>
-          There is nothing to show. Swipe right to open the menu and upload some
-          content !
-        </Text>
-      );
-    }
-
-    return posts?.map((image: ImgurImage) => (
-      <ImgurCard key={image.id} image={image} />
-    ));
-  };
+  const card = ({ item }: { item: ImgurImage }) => (
+    <TouchableOpacity
+      key={item.id}
+      onPress={() => setmodal({ isVisible: true, image: item })}
+    >
+      <ImgurCard image={item} />
+    </TouchableOpacity>
+  );
 
   const style = StyleSheet.create({
     container: {
       width: Dimensions.get('window').width,
-      flexDirection: 'row',
+      flexDirection: 'column',
     },
-    column: {
-      width: Dimensions.get('window').width,
+    viewLoading: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingTop: 100,
+      backgroundColor: colors.accent,
     },
   });
 
-  return (
-    <ScrollView>
-      <View style={style.container}>
-        <View style={style.column}>{getCards()}</View>
+  if(isLoading) return (
+    <View style={style.viewLoading}>
+        <ActivityIndicator animating={true} color={colors.primary} />
       </View>
-    </ScrollView>
+  )
+
+  return (
+    <>
+      {modal.isVisible && (
+        <Portal>
+          <Modal
+            visible={modal.isVisible}
+            onDismiss={() => setmodal({ isVisible: false, image: null })}
+            contentContainerStyle={{
+              flex: 1,
+              flexDirection: 'column',
+              backgroundColor: colors.surface,
+              width: '80%',
+              maxHeight: '80%',
+              alignSelf: 'center',
+            }}
+          >
+            <ScrollView>
+              {modal.image?.images.map((img) => (
+                <View
+                  key={Math.floor(Math.random() * 9999)}
+                  style={{
+                    flex: 1,
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    padding: 15,
+                  }}
+                >
+                  {/* calcul de la width trouvé au pif hein, j'suis pas mathématicien moi ! */}
+                  <AutoHeightImage
+                    width={Dimensions.get('window').width * 0.73}
+                    source={{ uri: img.link }}
+                    fallbackSource={{ uri: fallbackImage }}
+                  />
+                  <Text
+                    theme={theme}
+                    style={{ padding: 15, textAlign: 'justify' }}
+                  >
+                    {img.description}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+          </Modal>
+        </Portal>
+      )}
+
+      {!posts?.length && (
+        <Text style={{ color: colors.white }}>
+          There is nothing to show. Swipe right to open the menu and upload some
+          content !
+        </Text>
+      )}
+
+      <FlatList
+        data={posts}
+        renderItem={card}
+        keyExtractor={(item) => item.id}
+      />
+
+      {/* <View style={style.container}></View> */}
+    </>
   );
 };

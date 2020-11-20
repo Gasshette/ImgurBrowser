@@ -1,6 +1,8 @@
-import { AppState } from './app-state';
+import { AppState, AppStateType, Filters, SnackbarParams } from './app-state';
 import { AuthConfiguration, authorize } from 'react-native-app-auth';
 import { ImgurImage } from './models/image';
+import { colors } from './App';
+import * as _ from 'lodash';
 
 /**
  * Singleton source: https://refactoring.guru/fr/design-patterns/singleton/typescript/example
@@ -60,12 +62,21 @@ export class Api {
     return Api._instance;
   }
 
-  private getHeader = (method: string) => {
+  private getHeader = (
+    method: string,
+    isTokenNeeded: boolean = true,
+    body?: any
+  ) => {
+    const authorization = true
+      ? `Bearer ${this._accessToken}`
+      : `Client_ID ${this.CLIENT_ID}`;
+
     const requestInit: RequestInit = {
+      body,
+      method,
       headers: {
         mode: 'cors',
-        method,
-        authorization: `Bearer ${this._accessToken}`,
+        authorization,
       },
     };
 
@@ -76,40 +87,159 @@ export class Api {
     return authorize(this.config);
   };
 
-  // If true, retrieve mock, else retrieve real data from ImgurAPI
-  public getPosts = () => {
-    const url = true
-      ? `${this.mockUrl}posts.json`
-      : `https://api.imgur.com/3/account/${this.username}/images`;
+  private addImagesInAlbums(data: Array<ImgurImage>): Array<ImgurImage> {
+    let newState: Array<ImgurImage> = _.cloneDeep(data);
+    data.forEach(async (post: ImgurImage, i: number) => {
+      try {
+        if (post.is_album) {
+          const dataImages = await this.getAlbumImages(post.id);
+          newState[i].images = dataImages;
+        } else {
+          newState[i].images = [post];
+        }
+      } catch (error) {
+        console.error('Error while settings images to album: ', post.images);
+      }
+    });
 
-    fetch(url, this.getHeader('GET'))
-      .then((res: Response) => res.json())
-      .then((json: { data: Array<ImgurImage> }) => {
-        this.appState.setAppState({
-          posts: json.data,
-        });
-      })
-      .catch((error) => console.log('Error while retrieving posts'));
+    return newState;
+  }
+
+  private getAlbumImages = async (albumHash: string) => {
+    try {
+      let data = await fetch(
+        `https://api.imgur.com/3/album/${albumHash}/images`,
+        this.getHeader('GET', false)
+      );
+
+      let json = await data.json();
+
+      return json.data;
+    } catch (error) {
+      console.error('Error getting images from album: ', error);
+    }
   };
 
-  public getFavorites = () => {
-    const url = true
-      ? `${this.mockUrl}favorites.json`
-      : `https://api.imgur.com/3/account/${this.username}/gallery_favorites`;
+  public reloadData(route: string){
+    switch(route.toLowerCase()){
+      case 'favorites':
+        this.getFavorites(true);
+        break;
+      case 'mycontent':
+        this.getMyContent(true);
+        break;
+      case 'gallery':
+        this.getGallery(true);
+        break;
+    }
+  }
 
-    return fetch(url, this.getHeader('GET'))
-    .then((res: Response) => res.json())
+  public getGallery = (isSync: boolean = false) => {
+    // Images from anyone, filtered to only get images
+    const queryParams = new URLSearchParams();
+    if (this.appState.state.value.filters !== undefined) {
+      let title;
+      let tag;
+      title = this.appState.state.value.filters.title;
+      tag = this.appState.state.value.filters.tag;
+      // queryParams.append('tag', tag ? tag : '');
+    }
+    queryParams.append('title', 'ludicrous');
+
+    const url = `https://api.imgur.com/3/gallery/search?q=${queryParams.toString()}`;
+
+    this.getPosts(isSync, url, false);
+  };
+
+  public getMyContent = (isSync: boolean = false) => {
+    // Image from logged user account
+    const url = `https://api.imgur.com/3/account/${this.username}/images`;
+    this.getPosts(isSync, url, true);
+  };
+
+  public getFavorites = (isSync: boolean = false) => {
+    const url = `https://api.imgur.com/3/account/${this.username}/gallery_favorites`;
+    this.getPosts(isSync, url, true);
+  };
+
+  private getPosts = (
+    isSync: boolean = false,
+    url: string,
+    isUserOwnContent: boolean
+  ) => {
+    fetch(url, this.getHeader('GET', isUserOwnContent))
+      .then((res: Response) => res.json())
       .then((json: { data: Array<ImgurImage> }) => {
-        this.appState.setAppState({
-          posts: json.data,
-        });
+        let newState: AppStateType = { posts: json.data };
+
+        newState.posts = this.addImagesInAlbums(json.data);
+
+        if (isSync) {
+          newState.snackbar = {
+            color: colors.lemonGreen,
+            message: 'Data successfuly synchronized ! :D',
+          } as SnackbarParams;
+        }
+        this.appState.setAppState(newState);
       })
-      .catch((error) => console.log('Error while retrieving favs'));
+      .catch((error) => {
+        console.error(
+          'Something went wrong while loading the new data :( - ',
+          error.message
+        );
+        this.appState.setAppState({
+          snackbar: {
+            color: colors.warn,
+            message: 'Something went wrong while loading the new data :(',
+          } as SnackbarParams,
+        });
+      });
+  };
+
+  public postImage = (body: FormData) => {
+    let header = this.getHeader('POST', true, body);
+
+    return fetch('https://api.imgur.com/3/image', header)
+      .then((response) => response.json())
+      .then((json: { data: ImgurImage }) => {
+        if (json.data.error) {
+          this.appState.setAppState({
+            snackbar: {
+              color: colors.warn,
+              message: `Error: ${json.data.error.message}`,
+            } as SnackbarParams,
+          });
+        } else {
+          // Add the image in our state so it appear in the home page without having to reload the content
+          const storedPosts = _.cloneDeep(this.appState.state.value.posts);
+          storedPosts?.push(json.data);
+
+          this.appState.setAppState({
+            posts: storedPosts,
+            snackbar: {
+              color: colors.lemonGreen,
+              message: 'Image successfully sent :D',
+            } as SnackbarParams,
+          });
+        }
+      })
+      .catch((error) => {
+        console.error(
+          'Something went wrong while sending your image :( - ',
+          error.message
+        );
+        this.appState.setAppState({
+          snackbar: {
+            color: colors.warn,
+            message: 'Something went wrong while sending your image :(',
+          } as SnackbarParams,
+        });
+      });
   };
 
   public toggleFavorite = (id: string) => {
     return fetch(
-      `https://api.imgur.com/3/image/${id}/favorite`,
+      `https://api.imgur.com/3/album/${id}/favorite`,
       this.getHeader('POST')
     );
   };

@@ -3,20 +3,20 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import { NavigationContainer } from '@react-navigation/native';
 import { Gallery } from '../components/gallery';
 import { Upload } from '../components/upload';
-import { Favorite } from '../components/favorite';
 import { Header } from '../components/header';
 import { Error } from '../components/error';
-import { UserGallery } from '../components/userGallery';
 import { colors } from '../App';
-import { Dimensions, Image, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
+import { ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 import { DrawerContent } from './drawer-content';
 import { Authentication } from './authentication';
-import { Modal, Snackbar, Text } from 'react-native-paper';
-import { AppState, AppStateType, SnackbarParams } from '../app-state';
+import { Snackbar, Surface, Text } from 'react-native-paper';
+import { AppState } from '../app-state';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import {theme} from '../App';
+import { theme } from '../App';
 import { Post } from '../components/post';
+import { SnackbarParams } from '../types/snackbar-params';
+import { AppStateType } from '../types/appstate-type';
 
 const Drawer = createDrawerNavigator();
 
@@ -47,27 +47,27 @@ export const AppWrapper = (props: any) => {
   }, []);
 
   const getComponent = (Component: any, title: string, props: any) => (
-    <ScrollView style={{ backgroundColor: colors.accent, minHeight: '100%' }}>
-      <View style={style.shadow}>
-        <Header title={title} navigation={props.navigation} />
-      </View>
-      <View style={{ padding: 15 }}>
+    <View
+      style={{ flex: 1, backgroundColor: colors.accent, minHeight: '100%' }}
+    >
+      <Header title={title} navigation={props.navigation} />
+      <ScrollView style={{ padding: 15 }}>
         <Component {...props} />
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 
   // TODO: Dark magic makes it not working, niether here of inside the header component.
   // Need an investigation from higher spirit power
-  const style = StyleSheet.create({
-    shadow: {
-      shadowColor: '#000',
-      shadowOffset: { width: 1, height: 30 },
-      shadowOpacity: 0.4,
-      shadowRadius: 3,
-      elevation: 5,
-    },
-  });
+  // const style = StyleSheet.create({
+  //   shadow: {
+  //     shadowColor: '#000',
+  //     shadowOffset: { width: 1, height: 30 },
+  //     shadowOpacity: 0.4,
+  //     shadowRadius: 3,
+  //     elevation: 5,
+  //   },
+  // });
 
   return (
     <NavigationContainer>
@@ -81,7 +81,9 @@ export const AppWrapper = (props: any) => {
             } as ViewStyle
           }
         >
-          <Text theme={theme} style={{fontSize: 16}}>{snackbarParams.message}</Text>
+          <Text theme={theme} style={{ fontSize: 16 }}>
+            {snackbarParams.message}
+          </Text>
         </Snackbar>
       )}
 
@@ -91,17 +93,27 @@ export const AppWrapper = (props: any) => {
           drawerContent={(props) => <DrawerContent {...props} />}
         >
           <Drawer.Screen name='MyContent'>
-            {({ navigation }) => getComponent(Post, 'My content', {navigation, isUserOwnContent: true})}
+            {({ navigation }) =>
+              getComponent(Post, 'My content', {
+                navigation,
+                isUserOwnContent: true,
+              })
+            }
           </Drawer.Screen>
           <Drawer.Screen name='Gallery'>
-            {({ navigation }) => getComponent(Post, 'Gallery', {navigation, isUserOwnContent: false})}
+            {({ navigation }) =>
+              getComponent(Gallery, 'Gallery', {
+                navigation,
+                isUserOwnContent: false,
+              })
+            }
           </Drawer.Screen>
           <Drawer.Screen name='Upload'>
-            {({ navigation }) => getComponent(Upload, 'Upload', {navigation})}
+            {({ navigation }) => getComponent(Upload, 'Upload', { navigation })}
           </Drawer.Screen>
           <Drawer.Screen name='Favorites'>
             {({ navigation }) =>
-              getComponent(Post, 'Favorites', {navigation})
+              getComponent(Post, 'Favorites', { navigation })
             }
           </Drawer.Screen>
           <Drawer.Screen name='Error' component={Error} />

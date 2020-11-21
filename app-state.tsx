@@ -1,37 +1,21 @@
-import { ImgurImage } from "./models/image";
-import {BehaviorSubject} from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
+import { AppStateType } from './types/appstate-type';
 
-
-export type SnackbarParams = {
-    color: string;
-    message: string;
-    isVisible: boolean;
-}
-
-export type Filters = {
-  title?: string;
-  tag?: string;
-}
-
-export type AppStateType = {
-  username?: string;
-  isTokenRetrieved?: boolean;
-  posts?: Array<ImgurImage>;
-  favorites?: Array<ImgurImage>;
-  snackbar?: SnackbarParams;
-  filters?: Filters;
-}
-
+/**
+ * A custom made state management because I couldn't make the React context API works properly, and Redux is overkill for an app of this size
+ */
 export class AppState {
   private static _instance: AppState;
+
+
   public state = new BehaviorSubject<AppStateType>({});
 
   /**
    * Set app state without erasing the previous values (values not available in the newState param)
    * */
   public setAppState = (newState: AppStateType) => {
-    this.state.next({...this.state, ...newState});
-  }
+    this.state.next({ ...this.state, ...newState });
+  };
 
   private constructor() {}
 

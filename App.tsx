@@ -1,5 +1,5 @@
 import React from 'react';
-import { DefaultTheme, Provider as PaperProvider } from 'react-native-paper';
+import { DarkTheme, Provider as PaperProvider } from 'react-native-paper';
 import { AppWrapper } from './app-wrapper/app-wrapper';
 
 export const fallbackImage = '../assets//splash.png';
@@ -15,9 +15,9 @@ export const colors = {
 };
 
 export const theme = {
-  ...DefaultTheme,
+  ...DarkTheme,
   colors: {
-    ...DefaultTheme.colors,
+    ...DarkTheme.colors,
     primary: colors.primary,
     accent: colors.accent,
     warn: colors.warn,

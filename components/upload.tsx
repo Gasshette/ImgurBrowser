@@ -15,11 +15,12 @@ import ImagePicker, {
 } from 'react-native-image-picker';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { Api } from '../api';
-import { AppState, AppStateType } from '../app-state';
+import { AppState } from '../app-state';
 import {theme} from '../App';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { ImgurImage } from '../models/image';
+import { UploadData } from '../types/upload-data';
+import { AppStateType } from '../types/appstate-type';
 
 /**
  * Had to do this for the gallery and camera to be properly opened :
@@ -32,11 +33,6 @@ export const Upload = () => {
   const appState = AppState.getInstance();
 
   const [image, setImage] = React.useState<ImagePickerResponse>();
-
-  type UploadData = {
-    title: string;
-    description: string;
-  };
 
   const { control, handleSubmit } = useForm<UploadData>({
     defaultValues: {
@@ -75,6 +71,7 @@ export const Upload = () => {
     if (image?.uri) {
       return (
         <View style={{flex: 1, flexDirection: 'column'}}>
+          {/* AutoHeightImage does not work here, don't know why */}
           <Image
             style={{
               width: '100%',
@@ -88,7 +85,7 @@ export const Upload = () => {
     } else return <Text theme={theme}>Please select an image or take a picture</Text>;
   };
 
-  const onSubmit = (data: any) => {
+  const onSubmit = () => {
     if (image) {
       const formData = new FormData();
       formData.append('image', {
@@ -121,7 +118,6 @@ export const Upload = () => {
       marginVertical: 10,
       marginTop: 0,
     },
-    buttons: { color: colors.white },
     fatAssButtonDisplay: {
       flex: 1,
       flexDirection: 'row',
@@ -135,33 +131,6 @@ export const Upload = () => {
 
   return (
     <View style={{ marginTop: 15 }}>
-      {/* <Controller
-        control={control}
-        name='title'
-        render={({ onBlur, onChange, value }) => (
-          <TextInput
-            style={style.spacing}
-            label='Title'
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-          />
-        )}
-      />
-      <Controller
-        control={control}
-        name='description'
-        render={({ onBlur, onChange, value }) => (
-          <TextInput
-            style={style.spacing}
-            label='Description'
-            autoCapitalize='sentences'
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-          />
-        )}
-      /> */}
       <View style={style.spacing}>
         <View style={style.fatAssButtonDisplay}>
           <TouchableOpacity onPress={openGallery}>
@@ -191,7 +160,7 @@ export const Upload = () => {
       <Button
         mode={'contained'}
         style={style.spacing}
-        onPress={handleSubmit(onSubmit)}
+        onPress={() => onSubmit()}
       >
         Post it !
       </Button>

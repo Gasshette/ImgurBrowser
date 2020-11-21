@@ -1,4 +1,6 @@
-import { AppState, AppStateType, Filters, SnackbarParams } from './app-state';
+import { SnackbarParams } from './types/snackbar-params';
+import { AppStateType } from './types/appstate-type';
+import { AppState } from './app-state';
 import { AuthConfiguration, authorize } from 'react-native-app-auth';
 import { ImgurImage } from './models/image';
 import { colors } from './App';
@@ -87,7 +89,9 @@ export class Api {
     return authorize(this.config);
   };
 
-  private addImagesInAlbums(data: Array<ImgurImage>): Array<ImgurImage> {
+  private async addImagesInAlbums(
+    data: Array<ImgurImage>
+  ): Promise<Array<ImgurImage>> {
     let newState: Array<ImgurImage> = _.cloneDeep(data);
     data.forEach(async (post: ImgurImage, i: number) => {
       try {
@@ -120,8 +124,8 @@ export class Api {
     }
   };
 
-  public reloadData(route: string){
-    switch(route.toLowerCase()){
+  public reloadData(route: string) {
+    switch (route.toLowerCase()) {
       case 'favorites':
         this.getFavorites(true);
         break;
@@ -138,15 +142,16 @@ export class Api {
     // Images from anyone, filtered to only get images
     const queryParams = new URLSearchParams();
     if (this.appState.state.value.filters !== undefined) {
-      let title;
-      let tag;
-      title = this.appState.state.value.filters.title;
-      tag = this.appState.state.value.filters.tag;
-      // queryParams.append('tag', tag ? tag : '');
-    }
-    queryParams.append('title', 'ludicrous');
+      let all = this.appState.state.value.filters.all;
+      let tags = this.appState.state.value.filters.tags;
+      let type = this.appState.state.value.filters.type;
 
-    const url = `https://api.imgur.com/3/gallery/search?q=${queryParams.toString()}`;
+      all && queryParams.append('q_all', all);
+      tags && queryParams.append('q_tags', tags);
+      type && queryParams.append('q_type', type);
+    }
+
+    const url = `https://api.imgur.com/3/gallery/search?${queryParams.toString()}`;
 
     this.getPosts(isSync, url, false);
   };
@@ -167,33 +172,39 @@ export class Api {
     url: string,
     isUserOwnContent: boolean
   ) => {
-    fetch(url, this.getHeader('GET', isUserOwnContent))
-      .then((res: Response) => res.json())
-      .then((json: { data: Array<ImgurImage> }) => {
-        let newState: AppStateType = { posts: json.data };
+    if (false) {
+      const newState = require('./mocks/posts.json');
+      this.appState.setAppState(newState);
+    } else {
+      fetch(url, this.getHeader('GET', isUserOwnContent))
+        .then((res: Response) => res.json())
+        .then(async (json: { data: Array<ImgurImage> }) => {
+          let newState: AppStateType = { posts: json.data };
 
-        newState.posts = this.addImagesInAlbums(json.data);
+          newState.posts = await this.addImagesInAlbums(json.data);
 
-        if (isSync) {
-          newState.snackbar = {
-            color: colors.lemonGreen,
-            message: 'Data successfuly synchronized ! :D',
-          } as SnackbarParams;
-        }
-        this.appState.setAppState(newState);
-      })
-      .catch((error) => {
-        console.error(
-          'Something went wrong while loading the new data :( - ',
-          error.message
-        );
-        this.appState.setAppState({
-          snackbar: {
-            color: colors.warn,
-            message: 'Something went wrong while loading the new data :(',
-          } as SnackbarParams,
+          if (isSync) {
+            newState.snackbar = {
+              color: colors.lemonGreen,
+              message: 'Data successfuly synchronized ! :D',
+            } as SnackbarParams;
+          }
+
+          this.appState.setAppState(newState);
+        })
+        .catch((error) => {
+          console.error(
+            'Something went wrong while loading the new data :( - ',
+            error.message
+          );
+          this.appState.setAppState({
+            snackbar: {
+              color: colors.warn,
+              message: 'Something went wrong while loading the new data :(',
+            } as SnackbarParams,
+          });
         });
-      });
+    }
   };
 
   public postImage = (body: FormData) => {
@@ -241,6 +252,13 @@ export class Api {
     return fetch(
       `https://api.imgur.com/3/album/${id}/favorite`,
       this.getHeader('POST')
+    );
+  };
+
+  public deleteOwnContent = (imageHash: string) => {
+    return fetch(
+      `https://api.imgur.com/3/image/${imageHash}`,
+      this.getHeader('DELETE')
     );
   };
 }

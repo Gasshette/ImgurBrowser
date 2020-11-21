@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Menu, Text, TextInput } from 'react-native-paper';
+import { Button, Menu, TextInput } from 'react-native-paper';
 import { Controller, useForm } from 'react-hook-form';
 import {
   Dimensions,
@@ -13,7 +13,7 @@ import { Filters } from '../types/filters';
 import { colors } from '../App';
 import { AppState } from '../app-state';
 import { AppStateType } from '../types/appstate-type';
-import { Subject, Subscription } from 'rxjs';
+import { Subject } from 'rxjs';
 import * as _ from 'lodash';
 import { takeUntil } from 'rxjs/operators';
 
@@ -45,10 +45,14 @@ export const GalleryFilters = () => {
     if (value !== '') {
       setMenuButtonValue(`Selected type: ${value}`);
       setType(value);
+    } else {
+      setMenuButtonValue(defaultMenuButtonValue);
+      setType(undefined);
     }
   };
 
   const onSubmit = (data: Filters) => {
+    console.log('triggered');
     // update filters in state and trigger api.getGallery()
     data.type = type;
     appState.setAppState({ filters: data });
@@ -62,6 +66,7 @@ export const GalleryFilters = () => {
   React.useEffect(() => {
     // when the state is updated, trigger api call and reset the form. Reduce the accordion
     appState.state.pipe(takeUntil(subject)).subscribe((state: AppStateType) => {
+      // This prevent sending a request without filters, this is the purpose of the gallery (Would be way better with a default filtering with newest, first page etc.. but time's up soon !)
       if (state.filters !== undefined) {
         api.getGallery();
       }
@@ -147,7 +152,7 @@ export const GalleryFilters = () => {
           </Button>
         }
       >
-        <Menu.Item onPress={() => selectMenuItem('')} title='Tous' />
+        <Menu.Item onPress={() => selectMenuItem('')} title='--' />
         <Menu.Item onPress={() => selectMenuItem('JPG')} title='.jpg' />
         <Menu.Item onPress={() => selectMenuItem('PNG')} title='.png' />
       </Menu>

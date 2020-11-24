@@ -1,5 +1,5 @@
 import { ImgurImage } from "../models/image";
-import { Filters } from "./filters";
+import { Filters, GalleryFiltersType } from "./gallery-filters-type";
 import { SnackbarParams } from "./snackbar-params";
 
 export type AppStateType = {
@@ -9,4 +9,5 @@ export type AppStateType = {
   favorites?: Array<ImgurImage>;
   snackbar?: SnackbarParams;
   filters?: Filters;
+  galleryFilters?: GalleryFiltersType;
 }

@@ -20,14 +20,13 @@ import { AppStateType } from '../types/appstate-type';
 
 const Drawer = createDrawerNavigator();
 
-export const AppWrapper = (props: any) => {
-  const subject = new Subject();
+export const AppWrapper = () => {
   const appState = AppState.getInstance();
 
   const [snackbarParams, setSnackbarParams] = React.useState<SnackbarParams>();
 
   React.useEffect(() => {
-    appState.state.pipe(takeUntil(subject)).subscribe((state: AppStateType) => {
+    let subscription = appState.state.subscribe((state: AppStateType) => {
       if (state.snackbar) {
         state.snackbar.isVisible = true;
         setSnackbarParams(state.snackbar);
@@ -43,7 +42,7 @@ export const AppWrapper = (props: any) => {
       }
     });
 
-    return subject.unsubscribe();
+    return subscription.unsubscribe();
   }, []);
 
   const getComponent = (Component: any, title: string, props: any) => (
@@ -56,18 +55,6 @@ export const AppWrapper = (props: any) => {
       </ScrollView>
     </View>
   );
-
-  // TODO: Dark magic makes it not working, niether here of inside the header component.
-  // Need an investigation from higher spirit power
-  // const style = StyleSheet.create({
-  //   shadow: {
-  //     shadowColor: '#000',
-  //     shadowOffset: { width: 1, height: 30 },
-  //     shadowOpacity: 0.4,
-  //     shadowRadius: 3,
-  //     elevation: 5,
-  //   },
-  // });
 
   return (
     <NavigationContainer>

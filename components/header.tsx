@@ -1,11 +1,12 @@
-import { Route, useRoute } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { IconButton, Text } from 'react-native-paper';
+import { IconButton, Modal, Portal, Text } from 'react-native-paper';
 import { Api } from '../api';
-import { colors } from '../App';
+import { colors, globalStyle } from '../App';
 import { AppState } from '../app-state';
-import { ImgurImage } from '../models/image';
+import { Helper } from '../helper';
+import { Filters } from './filters';
 
 type HeaderProps = {
   navigation?: any;
@@ -15,16 +16,20 @@ type HeaderProps = {
 };
 export const Header = (props: HeaderProps) => {
   const api = Api.getInstance();
-  const appState = AppState.getInstance();
+  const helper = new Helper();
 
   // Exception is thrown fromuseRoute() hook if header isn't a direct child of our navigator (AppWrapper)
   let route = !props.isModal ? useRoute() : null;
+
+  const [isModalVisible, setIsModalVisible] = React.useState(false);
 
   const syncImages = () => {
     if (route) {
       api.reloadData(route.name);
     }
   };
+
+  const closeModal = () => setIsModalVisible(false);
 
   const style = StyleSheet.create({
     blockLayout: {
@@ -44,40 +49,62 @@ export const Header = (props: HeaderProps) => {
     title: {
       fontSize: 24,
     },
+    modalContent: {
+      flexShrink: 1,
+      flexDirection: 'column',
+      backgroundColor: colors.accent,
+      width: '80%',
+      padding: 15,
+      alignSelf: 'center',
+    },
   });
 
   return (
     <>
+      <Portal>
+        <Modal
+          visible={isModalVisible}
+          onDismiss={() => setIsModalVisible(false)}
+          contentContainerStyle={globalStyle.modal}
+        >
+          <Filters closeModal={closeModal} />
+        </Modal>
+      </Portal>
+
       <View style={[style.wrapper, style.blockLayout]}>
         {!props.isModal ? (
           <>
             <View style={style.blockLayout}>
-              <Image
+              {/* <Image
                 source={require('../assets/imgurLogo.png')}
                 style={style.img}
-              />
+              /> */}
               <Text style={style.title}>{props.title}</Text>
             </View>
             <View style={style.blockLayout}>
-              <IconButton
-                icon='refresh'
-                color={colors.primary}
-                style={{ padding: 0, marginTop: 0, marginBottom: 0 }}
-                size={32}
-                onPress={syncImages}
-              />
-              <IconButton
-                icon='filter'
-                color={colors.primary}
-                style={{ padding: 0, marginTop: 0, marginBottom: 0 }}
-                size={32}
-                onPress={syncImages}
-              />
+              {!helper.testString([route?.name], ['upload']) && (
+                <>
+                  <IconButton
+                    icon='refresh'
+                    color={colors.primary}
+                    style={{ padding: 0, marginTop: 0, marginBottom: 0 }}
+                    size={24}
+                    onPress={syncImages}
+                  />
+                  <IconButton
+                    icon='filter'
+                    color={colors.primary}
+                    style={{ padding: 0, marginTop: 0, marginBottom: 0 }}
+                    size={24}
+                    onPress={() => setIsModalVisible(true)}
+                  />
+                </>
+              )}
               <IconButton
                 icon='menu'
                 color={colors.primary}
                 style={{ padding: 0, marginTop: 0, marginBottom: 0 }}
-                size={32}
+                size={24}
                 onPress={() => props.navigation.openDrawer()}
               />
             </View>
@@ -88,7 +115,7 @@ export const Header = (props: HeaderProps) => {
               icon='arrow-left'
               color={colors.primary}
               style={{ padding: 0, marginTop: 0, marginBottom: 0 }}
-              size={32}
+              size={24}
               onPress={() => props.setModal({ isVisible: false, image: null })}
             ></IconButton>
           </View>

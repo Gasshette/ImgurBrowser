@@ -35,8 +35,6 @@ export const Post = ({
   isUserOwnContent: boolean;
   navigation: any;
 }) => {
-  const subject = new Subject();
-
   const api = Api.getInstance();
   const appState = AppState.getInstance();
   const helper = new Helper();
@@ -48,32 +46,23 @@ export const Post = ({
     image: ImgurImage | null;
   }>({ isVisible: false, image: null });
 
-  let appStateSubscription: Subscription;
-  let routeSubscription: Subscription;
-
   React.useEffect(() => {
-    if (!appStateSubscription) {
-      appStateSubscription = appState.state
-        .pipe(takeUntil(subject))
+      let subscription = appState.state
         .subscribe((state: AppStateType) => {
           if (state !== undefined && state.posts !== undefined) {
             setPosts(state.posts);
-            setIsLoading(false);
           }
-        });
-    }
 
-    return () => {
-      appStateSubscription = Subscription.EMPTY;
-      subject.next();
-      subject.complete();
-    };
+          setIsLoading(false);
+        });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // We need to handle the data loading with this handler rather than the
   // 'useRoute()' hook because the hook isn't updated (Dark magic, trick of the light, I don't know)
   React.useEffect(() => {
-    routeSubscription = navigation.addListener('focus', (navData: any) => {
+    let subscription = navigation.addListener('focus', (navData: any) => {
       setIsLoading(true);
 
       if (helper.testString(['gallery'], [navData.target])) {
@@ -85,9 +74,8 @@ export const Post = ({
       }
     });
 
-    return () => {
-      routeSubscription = Subscription.EMPTY;
-    };
+
+    return () => subscription.unsubscribe();
   }, [navigation]);
 
   const card = ({ item }: { item: ImgurImage }) => (
@@ -187,8 +175,6 @@ export const Post = ({
         renderItem={card}
         keyExtractor={(item) => item.id}
       />
-
-      {/* <View style={style.container}></View> */}
     </>
   );
 };

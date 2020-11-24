@@ -5,13 +5,12 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { Api } from '../api';
 import { colors } from '../App';
-import { AppState, AppStateType } from '../app-state';
+import { AppState } from '../app-state';
 import { ImgurImage } from '../models/image';
+import { AppStateType } from '../types/appstate-type';
 import { ImgurCard } from './imgur-card';
 
 export const Favorite = () =>  {
-  const subject = new Subject();
-
   const api = Api.getInstance();
   const appState = AppState.getInstance();
 
@@ -23,13 +22,13 @@ export const Favorite = () =>  {
       api.getFavorites();
     }
 
-    appState.state.pipe(takeUntil(subject)).subscribe((state: AppStateType) => {
+    let subscription = appState.state.subscribe((state: AppStateType) => {
       if (state !== undefined && state.posts !== undefined) {
         setFavs(state.posts);
       }
     });
 
-    return subject.unsubscribe();
+    return subscription.unsubscribe();
   }, []);
 
   const getCards = () => {

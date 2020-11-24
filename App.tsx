@@ -1,4 +1,5 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { DarkTheme, Provider as PaperProvider } from 'react-native-paper';
 import { AppWrapper } from './app-wrapper/app-wrapper';
 
@@ -25,6 +26,27 @@ export const theme = {
     text: colors.white,
   },
 };
+
+export const globalStyle = StyleSheet.create({
+  modal: {
+    flexDirection: 'column',
+    backgroundColor: colors.accent,
+    width: '80%',
+    alignSelf: 'center',
+    padding: 30,
+    borderRadius: 5
+  },
+  modalTitle: { paddingBottom: 15, fontSize: 18 },
+  modalButtonLayout: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 20,
+  },
+  modalButtonSolo: {
+    alignSelf: 'flex-end',
+    paddingTop: 20,
+  }
+});
 
 export default function App() {
   return (

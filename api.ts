@@ -66,7 +66,6 @@ export class Api {
 
   private getHeader = (
     method: string,
-    isTokenNeeded: boolean = true,
     body?: any
   ) => {
     const authorization = true
@@ -113,7 +112,7 @@ export class Api {
     try {
       let data = await fetch(
         `https://api.imgur.com/3/album/${albumHash}/images`,
-        this.getHeader('GET', false)
+        this.getHeader('GET')
       );
 
       let json = await data.json();
@@ -141,46 +140,43 @@ export class Api {
   public getGallery = (isSync: boolean = false) => {
     // Images from anyone, filtered to only get images
     const queryParams = new URLSearchParams();
-    if (this.appState.state.value.filters !== undefined) {
-      let all = this.appState.state.value.filters.all;
-      let tags = this.appState.state.value.filters.tags;
-      let type = this.appState.state.value.filters.type;
+    if (this.appState.state.value.galleryFilters !== undefined) {
+      let all = this.appState.state.value.galleryFilters.all;
+      let tags = this.appState.state.value.galleryFilters.tags;
+      let type = this.appState.state.value.galleryFilters.type;
 
       all && queryParams.append('q_all', all);
       tags && queryParams.append('q_tags', tags);
       type && queryParams.append('q_type', type);
+
     }
-
-    const url = `https://api.imgur.com/3/gallery/search?${queryParams.toString()}`;
-
-    this.getPosts(isSync, url, false);
+      const url = `https://api.imgur.com/3/gallery/search?${queryParams.toString()}`;
+      this.getPosts(isSync, url);
   };
 
   public getMyContent = (isSync: boolean = false) => {
     // Image from logged user account
     const url = `https://api.imgur.com/3/account/${this.username}/images`;
-    this.getPosts(isSync, url, true);
+    this.getPosts(isSync, url);
   };
 
   public getFavorites = (isSync: boolean = false) => {
     const url = `https://api.imgur.com/3/account/${this.username}/gallery_favorites`;
-    this.getPosts(isSync, url, true);
+    this.getPosts(isSync, url);
   };
 
   private getPosts = (
     isSync: boolean = false,
-    url: string,
-    isUserOwnContent: boolean
+    url: string
   ) => {
     if (false) {
       const newState = require('./mocks/posts.json');
       this.appState.setAppState(newState);
     } else {
-      fetch(url, this.getHeader('GET', isUserOwnContent))
+      fetch(url, this.getHeader('GET'))
         .then((res: Response) => res.json())
         .then(async (json: { data: Array<ImgurImage> }) => {
           let newState: AppStateType = { posts: json.data };
-
           newState.posts = await this.addImagesInAlbums(json.data);
 
           if (isSync) {
@@ -208,7 +204,7 @@ export class Api {
   };
 
   public postImage = (body: FormData) => {
-    let header = this.getHeader('POST', true, body);
+    let header = this.getHeader('POST', body);
 
     return fetch('https://api.imgur.com/3/image', header)
       .then((response) => response.json())

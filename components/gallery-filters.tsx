@@ -9,23 +9,20 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Api } from '../api';
-import { Filters } from '../types/filters';
 import { colors } from '../App';
 import { AppState } from '../app-state';
 import { AppStateType } from '../types/appstate-type';
 import { Subject } from 'rxjs';
 import * as _ from 'lodash';
-import { takeUntil } from 'rxjs/operators';
+import { GalleryFiltersType } from '../types/gallery-filters-type';
 
 export const GalleryFilters = () => {
-  const subject = new Subject();
-
   const api = Api.getInstance();
   const appState = AppState.getInstance();
 
   const defaultMenuButtonValue = 'File type';
 
-  const { control, handleSubmit, reset } = useForm<Filters>({
+  const { control, handleSubmit, reset } = useForm<GalleryFiltersType>({
     defaultValues: {
       all: '',
       tags: '',
@@ -47,15 +44,14 @@ export const GalleryFilters = () => {
       setType(value);
     } else {
       setMenuButtonValue(defaultMenuButtonValue);
-      setType(undefined);
+      setType('');
     }
   };
 
-  const onSubmit = (data: Filters) => {
-    console.log('triggered');
+  const onSubmit = (data: GalleryFiltersType) => {
     // update filters in state and trigger api.getGallery()
     data.type = type;
-    appState.setAppState({ filters: data });
+    appState.setAppState({ galleryFilters: data });
   };
 
   const resetFilters = () => {
@@ -64,27 +60,21 @@ export const GalleryFilters = () => {
   };
 
   React.useEffect(() => {
-    // when the state is updated, trigger api call and reset the form. Reduce the accordion
-    appState.state.pipe(takeUntil(subject)).subscribe((state: AppStateType) => {
+    // when the state is updated, trigger api call and reset the form
+    let subscription = appState.state.subscribe((state: AppStateType) => {
       // This prevent sending a request without filters, this is the purpose of the gallery (Would be way better with a default filtering with newest, first page etc.. but time's up soon !)
-      if (state.filters !== undefined) {
+      if (state.galleryFilters !== undefined) {
         api.getGallery();
       }
     });
 
-    return () => {
-      subject.next();
-      subject.complete();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const style = StyleSheet.create({
     spacing: {
       marginVertical: 10,
       marginTop: 0,
-    },
-    inputColor: {
-      color: colors.accent,
     },
     button: {
       width: Dimensions.get('window').width * 0.45,
@@ -116,7 +106,7 @@ export const GalleryFilters = () => {
 
             value={value}
             mode='flat'
-            style={[style.spacing, style.inputColor]}
+            style={style.spacing}
             label='Search for all these words (and)'
           />
         )}
@@ -132,8 +122,9 @@ export const GalleryFilters = () => {
             onChangeText={onChange}
             value={value}
             mode='flat'
-            style={[style.spacing, style.inputColor]}
+            style={style.spacing}
             label='Comma delimited list of tags'
+
           />
         )}
       />

@@ -17,9 +17,6 @@ import { TouchableOpacity } from 'react-native-gesture-handler';
 import { Api } from '../api';
 import { AppState } from '../app-state';
 import {theme} from '../App';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
-import { UploadData } from '../types/upload-data';
 import { AppStateType } from '../types/appstate-type';
 
 /**
@@ -27,19 +24,10 @@ import { AppStateType } from '../types/appstate-type';
  * https://github.com/react-native-image-picker/react-native-image-picker/issues/1233#issuecomment-719749514
  */
 export const Upload = () => {
-  const subject = new Subject();
-
   const api = Api.getInstance();
   const appState = AppState.getInstance();
 
   const [image, setImage] = React.useState<ImagePickerResponse>();
-
-  const { control, handleSubmit } = useForm<UploadData>({
-    defaultValues: {
-      title: '',
-      description: '',
-    },
-  });
 
   const options: ImagePickerOptions = {
     mediaType: 'photo',
@@ -98,18 +86,26 @@ export const Upload = () => {
       });
 
       api.postImage(formData);
+    } else {
+      appState.setAppState({
+        snackbar: {
+          color: colors.warn,
+          isVisible: true,
+          message: 'You must have an image to upload'
+        }
+      })
     }
   };
 
   // Reset image after it was sent
   React.useEffect(() => {
-    appState.state.pipe(takeUntil(subject)).subscribe((state: AppStateType) =>{
+    let subscription = appState.state.subscribe((state: AppStateType) =>{
       state && setImage(undefined);
     });
 
     return () => {
-      subject.unsubscribe();
       setImage(undefined);
+      return subscription.unsubscribe();
     }
   }, []);
 
@@ -125,7 +121,7 @@ export const Upload = () => {
       marginVertical: 25,
     },
     fatAssButton: {
-      padding: 30,
+      paddingVertical: 20,
     },
   });
 

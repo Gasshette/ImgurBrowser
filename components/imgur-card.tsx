@@ -10,7 +10,7 @@ import {
   Text,
 } from 'react-native-paper';
 import { Api } from '../api';
-import { colors, fallbackImage } from '../App';
+import { colors, fallbackImage, globalStyle } from '../App';
 import { ImgurImage } from '../models/image';
 import * as _ from 'lodash';
 import { Helper } from '../helper';
@@ -124,21 +124,6 @@ export const ImgurCard = ({ image }: { image: ImgurImage }) => {
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingTop: 15,
-    },
-    modalContent: {
-      flex: 1,
-      flexShrink: 1,
-      flexDirection: 'column',
-      backgroundColor: colors.accent,
-      width: '80%',
-      maxHeight: '30%',
-      alignSelf: 'center',
-    },
-    modalButtonView: {
-      flex: 1,
-      width: '100%',
-      flexDirection: 'row',
-      alignContent: 'space-around',
     }
   });
 
@@ -148,17 +133,17 @@ export const ImgurCard = ({ image }: { image: ImgurImage }) => {
         <Modal
           visible={isModalVisible}
           onDismiss={() => setIsModalVisible(false)}
-          contentContainerStyle={style.modalContent}
+          contentContainerStyle={globalStyle.modal}
         >
-          <Text style={{ padding: 15, fontSize: 18 }}>
+          <Text style={globalStyle.modalTitle}>
             Are you sure you want to delete your image ? this action is
             irreversible.
           </Text>
           <View
-            style={style.modalButtonView}
+            style={globalStyle.modalButtonLayout}
           >
-            <Button onPress={deleteOwnImage}>Confirm</Button>
-            <Button onPress={() => setIsModalVisible(false)}>Cancel</Button>
+            <Button mode='outlined' onPress={() => setIsModalVisible(false)}>Cancel</Button>
+            <Button mode='contained' onPress={deleteOwnImage}>Confirm</Button>
           </View>
         </Modal>
       </Portal>
@@ -172,8 +157,7 @@ export const ImgurCard = ({ image }: { image: ImgurImage }) => {
           style={style.cardContent}
         >
           <Text style={{ paddingVertical: 15 }}>
-            {image.description &&
-              _.truncate(image.description, { length: 50, separator: ',' })}
+            {_.truncate(image.description, { length: 50, separator: ',' })}
           </Text>
 
           {getActions()}

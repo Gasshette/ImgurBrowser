@@ -18,6 +18,10 @@ export const Authentication = (props: any) => {
   });
 
   React.useEffect(() => {
+    auth();
+  }, []);
+
+  const auth = () => {
     api
       .getTokens()
       .then((data: AuthenticationResponse) => {
@@ -35,7 +39,7 @@ export const Authentication = (props: any) => {
       .catch(() => {
         setauthState({ ...authState, isLoading: false });
       });
-  }, []);
+  };
 
   const style = StyleSheet.create({
     view: {

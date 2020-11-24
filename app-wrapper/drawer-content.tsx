@@ -59,12 +59,23 @@ export const DrawerContent = (props: any) => {
   );
 
   return (
-    <DrawerContentScrollView style={{ backgroundColor: colors.accent }}>
+    <DrawerContentScrollView
+      style={{ backgroundColor: colors.accent }}
+      contentContainerStyle={{ flex: 1, justifyContent: 'space-between' }}
+    >
       <FlatList
         data={pages}
         keyExtractor={(data) => data.route}
         renderItem={getLinks}
       />
+      {/* Couldn't find a way to disconnect the user */}
+      {/* <Button
+        color={colors.warn}
+        icon='logout'
+        onPress={() => console.log('disconnected')}
+      >
+        Sign out
+      </Button> */}
     </DrawerContentScrollView>
   );
 };
